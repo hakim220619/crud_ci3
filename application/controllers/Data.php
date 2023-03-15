@@ -10,7 +10,8 @@ class Data extends CI_Controller
         $this->load->library('user_agent');
         $this->load->library('session');
         $this->load->library('upload');
-
+        $this->load->model('DataModel');
+        $this->load->library('form_validation');
         $this->load->helper('url');
     }
     public function index()
@@ -23,7 +24,7 @@ class Data extends CI_Controller
         $this->db->join('kecamatan', 'kecamatan.id = users.kecamatan', 'left');
         $this->db->join('desa', 'desa.id = users.desa', 'left');
         $data['users'] = $this->db->get()->result_array();
-        // $data['users'] =  $this->db->select('select u.*, p.nama as namaProvinsi from users u left join propinsi p on u.provinsi=p.id');
+    
         $this->load->view('data', $data);
     }
     function add_ajax_kab($id_prov)
@@ -33,8 +34,6 @@ class Data extends CI_Controller
         foreach ($query->result() as $value) {
             $data .= "<option value='" . $value->id . "'>" . $value->nama . "</option>";
         }
-        // var_dump($data);
-        // die;
         echo $data;
     }
 
@@ -59,12 +58,7 @@ class Data extends CI_Controller
     }
     public function insert()
     {
-        // var_dump($this->input->post('username'));
-        // $this->_validate();
-
         $nama = $this->input->post('nama');
-        // var_dump($nama);
-        // die;
         $config['upload_path']   = './assets/foto/users/';
         $config['allowed_types'] = 'gif|jpg|jpeg|png'; //mencegah upload backdor
         $config['max_size']      = '9000';
@@ -75,8 +69,6 @@ class Data extends CI_Controller
         $this->upload->initialize($config);
         if ($this->upload->do_upload('imagefile')) {
             $gambar = $this->upload->data();
-            // var_dump($gambar);
-            // die;
             $save  = array(
                 'nama' => $this->input->post('nama'),
                 'alamat' => $this->input->post('alamat'),
@@ -91,14 +83,24 @@ class Data extends CI_Controller
             redirect($_SERVER['HTTP_REFERER']);
         }
     }
+    public function edit($id)
+    {
+        $data['provinces'] = $this->db->get('propinsi')->result();
+        $this->db->select('users.*, propinsi.nama as namaProvinsi, kabupaten.nama as namaKabupaten, kecamatan.nama as namaKecamatan, desa.nama as namaDesa');
+        $this->db->from('users');
+        $this->db->join('propinsi', 'propinsi.id = users.provinsi', 'left');
+        $this->db->join('kabupaten', 'kabupaten.id = users.kabupaten', 'left');
+        $this->db->join('kecamatan', 'kecamatan.id = users.kecamatan', 'left');
+        $this->db->join('desa', 'desa.id = users.desa', 'left');
+        $this->db->where('users.id', $id);
+        $data['users'] = $this->db->get()->row_array();
+
+        $this->load->view('edit', $data);
+    }
     public function update()
     {
-
-        // $this->_validate();
         $id = $this->input->post('id');
-
         $nama = $this->input->post('nama');
-
         $config['upload_path']   = './assets/foto/users/';
         $config['allowed_types'] = 'gif|jpg|jpeg|png'; //mencegah upload backdor
         $config['max_size']      = '9000';
@@ -108,11 +110,8 @@ class Data extends CI_Controller
 
         $this->upload->initialize($config);
 
-        if ($this->upload->do_upload('imagefile')) {
+        if ($this->upload->do_upload('imagefile') == true) {
             $gambar = $this->upload->data();
-            //Jika Password tidak kosong
-            // var_dump($gambar);
-            // die;
             $save  = array(
                 'nama' => $this->input->post('nama'),
                 'alamat' => $this->input->post('alamat'),
@@ -132,8 +131,19 @@ class Data extends CI_Controller
             $this->db->where('id', $id);
             $this->db->update('users', $save);
             redirect($_SERVER['HTTP_REFERER']);
+        } else {
+            $save  = array(
+                'nama' => $this->input->post('nama'),
+                'alamat' => $this->input->post('alamat'),
+                'provinsi' => $this->input->post('provinsi'),
+                'kabupaten'  => $this->input->post('kabupaten'),
+                'kecamatan'  => $this->input->post('kecamatan'),
+                'desa' => $this->input->post('desa'),
+            );
+            $this->db->where('id', $id);
+            $this->db->update('users', $save);
+            redirect('data');
         }
-        // echo json_encode(array("status" => TRUE));
     }
 
     public function delete($id)
@@ -147,5 +157,11 @@ class Data extends CI_Controller
         $this->db->where('id', $id);
         $this->db->delete('users');
         redirect($_SERVER['HTTP_REFERER']);
+    }
+    public function userList()
+    {
+        $postData = $this->input->post();
+        $data = $this->DataModel->getUsers($postData);
+        echo json_encode($data);
     }
 }
