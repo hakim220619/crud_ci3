@@ -134,7 +134,6 @@
 
 <script type="text/javascript">
     $(document).ready(function() {
-
         var userDataTable = $('#datatables').DataTable({
             'processing': true,
             'serverSide': true,
@@ -177,11 +176,8 @@
                 {
                     data: null,
                     bSortable: false,
-
                     mRender: function(o) {
                         return '<a href=<?= base_url('data/edit') ?>/' + o.id + '>' + 'Edit' +
-                            '</a>';
-                        return '<a href=<?= base_url('data/delete') ?>/' + o.id + '>' + 'Delete' +
                             '</a>';
                     }
 
